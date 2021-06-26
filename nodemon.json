@@ -6,6 +6,6 @@
     "ts":"node --require ts-node/register"
   },
   "watch":["src/"],
-  "exec":"ts-node --files src/server/bin.ts",
+  "exec":"ts-node --files src/index.ts",
   "ext":".js,.json,.ts,.yamls"
 }

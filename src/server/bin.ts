@@ -1,53 +1,28 @@
+import morgan from "morgan";
+import { ConnectionOptionsReader, createConnections } from "typeorm";
 import app from "../app";
-import debug from "debug";
-import http from "http";
-debug("express-good-example:server");
-const port: number | false = normalizePort(Number(process.env.PORT));
-app.set("port", port);
+import { LOG_FORMAT } from "../constants/envinronments.constant"
+import { ConnectionOptions } from "typeorm/connection/ConnectionOptions";
 
-const server = http.createServer(app);
+export default class Server {
+  public port: number;
 
-server.listen(port);
-server.on("error", onError);
-server.on("listening", onListening);
-
-function normalizePort(val: number) {
-  const PORT = val;
-  if (isNaN(PORT)) {
-    // named pipe
-    return val;
+  constructor(port: number) {
+    this.port = port;
   }
-  if (PORT >= 0) {
-    // port number
-    return port;
+  static init(port: number) {
+    return new Server(port);
   }
-  return false;
-}
-
-function onError(error: NodeJS.ErrnoException) {
-  if (error.syscall !== "listen") {
-    throw error;
+  start(callback: () => void) {
+    this.connect().then(() => {
+      app.use(morgan(LOG_FORMAT))
+      app.listen(this.port, callback);
+    })
+      .catch((err) => console.error(err));
   }
-  const bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case "EACCES":
-      console.error(bind + " requires elevated privileges");
-      process.exit(1);
-      break;
-    case "EADDRINUSE":
-      console.error(bind + " is already in use");
-      process.exit(1);
-      break;
-    default:
-      throw error;
+  private async connect() {
+    const typeOrmConfig: ConnectionOptionsReader = new ConnectionOptionsReader();
+    const connectionOptions: ConnectionOptions[] = await typeOrmConfig.all();
+    return createConnections(connectionOptions);
   }
-}
-
-function onListening() {
-  const addr = server.address();
-  if (!addr) return;
-  const bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
-  debug("Listening on " + bind);
-  console.log("Server on port", port);
 }
